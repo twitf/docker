@@ -8,7 +8,9 @@ git clone https://github.com/twitf/docker.git
 cd docker
 docker-compose up -d
 ```
+
 # 结构
+```
 ├─data        			`数据存放目录`
 │  ├─mysql    			`mysql数据`
 │  └─redis    			`redis数据`   
@@ -21,7 +23,7 @@ docker-compose up -d
 │          
 ├─php-fpm    			`php-fpm配置目录`
 │      php71.ini   		`php配置文件`
-
+```
 # 使用
 `localhost:8080` phpMyadmin目录
 服务器：mysql
