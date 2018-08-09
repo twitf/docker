@@ -1,6 +1,6 @@
 # docker
 php7.1,swoole,redis,nginx,mysql,elasticsearch
-> 默认上级目录为网站根目录
+> 默认上级目录为根目录
 # install
 
 ```
@@ -8,44 +8,28 @@ git clone https://github.com/twitf/docker.git
 cd docker
 docker-compose up -d
 ```
-
-
-├─data
-│  ├─mysql    
-│  └─redis    
-├─elasticsearch
-│      Dockerfile
-│      
-├─logs
+# 结构
+├─data        			`数据存放目录`
+│  ├─mysql    			`mysql数据`
+│  └─redis    			`redis数据`   
+├─logs        			`日志目录`
 │  └─nginx
-│          error.log
-│          
-├─mysql
-│  │  Dockerfile
-│  │  my.cnf
-│  │  
-│  └─docker-entrypoint-initdb.d
-│          .gitignore
-│          createdb.sql.example
-│          
+│          error.log    `nginx错误日志`    
 ├─nginx
-│  │  Dockerfile
 │  │  nginx.conf
-│  │  
-│  └─sites
-│          .gitignore
-│          app.conf.example
-│          default.conf
-│          laravel.conf.example
-│          swoole.test.conf
-│          symfony.conf.example
+│  └─sites				`域名配置目录`
 │          
-├─php-fpm
-│      Dockerfile
-│      php71.ini   
-├─phpmyadmin
-│      Dockerfile
-└─redis
-|    Dockerfile
+├─php-fpm    			`php-fpm配置目录`
+│      php71.ini   		`php配置文件`
 
+# 使用
+`localhost:8080` phpMyadmin目录
+服务器：mysql
+用户名：root
+密码：root
+
+nginx配置： `../--->/var/www`
+在sites下创建域名配置文件 根目录： `/var/www/xxx` 
+
+php 添加扩展  自行修改php-fpm下的DockerFfile
 
