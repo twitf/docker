@@ -1,0 +1,117 @@
+version: '3'
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  mysql:
+    driver: local
+  redis:
+    driver: local
+  phpmyadmin:
+    driver: local
+  elasticsearch:
+    driver: local
+
+services:
+
+  ### PHP-FPM ##############################################
+  php-fpm:
+    build:
+      context: ./php-fpm
+    volumes:
+    - ./php-fpm/php71.ini:/usr/local/etc/php/php.ini
+    - ../:/var/www
+    expose:
+    - "9000"
+    extra_hosts:
+    - "dockerhost:10.0.75.0"
+    environment:
+    - PHP_IDE_CONFIG=serverName=twitf
+    networks:
+    - backend
+
+  ### NGINX Server #########################################
+  nginx:
+    build:
+      context: ./nginx
+    volumes:
+    - ../:/var/www
+    - ./logs/nginx:/var/log/nginx
+    - ./nginx/sites/:/etc/nginx/sites-available
+    ports:
+    - "80:80"
+    - "443:443"
+    depends_on:
+    - php-fpm
+    networks:
+    - frontend
+    - backend
+
+  ### MySQL ################################################
+  mysql:
+    build:
+      context: ./mysql
+    environment:
+    - MYSQL_DATABASE=default
+    - MYSQL_USER=twitf
+    - MYSQL_PASSWORD=twitf
+    - MYSQL_ROOT_PASSWORD=root
+    volumes:
+    - ./data/mysql:/var/lib/mysql
+    - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    ports:
+    - "3306:3306"
+    networks:
+    - backend
+
+  ### Redis ################################################
+  redis:
+    build: ./redis
+    volumes:
+    - ./data/redis:/data
+    ports:
+    - "6379:6379"
+    networks:
+    - backend
+
+  ### phpMyAdmin ###########################################
+  phpmyadmin:
+    build: ./phpmyadmin
+    environment:
+    - PMA_ARBITRARY=1
+    - MYSQL_USER=default
+    - MYSQL_PASSWORD=twitf
+    - MYSQL_ROOT_PASSWORD=root
+    ports:
+    - "8080:80"
+    depends_on:
+    - "mysql"
+    networks:
+    - frontend
+    - backend
+
+  ### ElasticSearch ########################################
+  elasticsearch:
+    build: ./elasticsearch
+    volumes:
+    - elasticsearch:/usr/share/elasticsearch/data
+    environment:
+    - cluster.name=twitf-cluster
+    - bootstrap.memory_lock=true
+    - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+    - "9200:9200"
+    - "9300:9300"
+    depends_on:
+    - php-fpm
+    networks:
+    - frontend
+    - backend
