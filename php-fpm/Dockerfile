@@ -10,8 +10,6 @@ RUN echo "export TZ='Asia/Shanghai'"  >> /etc/profile
 RUN apt-get update -yqq && \
     pecl channel-update pecl.php.net
 
-RUN apt-get install apt-utils
-
 RUN apt-get install -y --no-install-recommends \
     curl \
     libmemcached-dev \
