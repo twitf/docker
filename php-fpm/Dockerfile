@@ -5,11 +5,24 @@ RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
     echo "deb http://mirrors.aliyun.com/debian/ jessie-proposed-updates main non-free contrib" >>/etc/apt/sources.list && \
     echo "deb-src http://mirrors.aliyun.com/debian/ jessie main non-free contrib" >>/etc/apt/sources.list && \
     echo "deb-src http://mirrors.aliyun.com/debian/ jessie-proposed-updates main non-free contrib" >>/etc/apt/sources.list
-
 RUN echo "export TZ='Asia/Shanghai'"  >> /etc/profile
 
 RUN apt-get update -yqq && \
     pecl channel-update pecl.php.net
+
+RUN apt-get install apt-utils
+
+RUN apt-get install -y --no-install-recommends \
+    curl \
+    libmemcached-dev \
+    libz-dev \
+    libpq-dev \
+    libjpeg-dev \
+    libpng12-dev \
+    libfreetype6-dev \
+    libssl-dev \
+    libmcrypt-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN pecl install -o -f redis \
     &&  rm -rf /tmp/pear \
