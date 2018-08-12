@@ -33,6 +33,7 @@ services:
     - PHP_IDE_CONFIG=serverName=twitf
     networks:
     - backend
+    container_name: php-fpm
 
   ### NGINX Server #########################################
   nginx:
@@ -50,6 +51,7 @@ services:
     networks:
     - frontend
     - backend
+    container_name: nginx
 
   ### MySQL ################################################
   mysql:
@@ -67,6 +69,7 @@ services:
     - "3306:3306"
     networks:
     - backend
+    container_name: mysql
 
   ### Redis ################################################
   redis:
@@ -77,6 +80,7 @@ services:
     - "6379:6379"
     networks:
     - backend
+    container_name: redis
 
   ### phpMyAdmin ###########################################
   phpmyadmin:
@@ -93,6 +97,7 @@ services:
     networks:
     - frontend
     - backend
+    container_name: phpmyadmin
 
   ### ElasticSearch ########################################
   elasticsearch:
@@ -115,3 +120,4 @@ services:
     networks:
     - frontend
     - backend
+    container_name: elasticSearch
