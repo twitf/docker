@@ -67,9 +67,9 @@ cd nghttp2-1.32.0 && \
 make && make install && ldconfig
 
 ## install swoole
-RUN curl -O https://github.com/swoole/swoole-src/archive/v4.0.4.tar.gz -L && \
-tar zxvf v4.0.4.tar.gz && \
-cd swoole-src-4.0.4 && \
+RUN curl -O https://github.com/swoole/swoole-src/archive/v4.1.0.tar.gz -L && \
+tar zxvf v4.1.0.tar.gz && \
+cd swoole-src-4.1.0 && \
 phpize && \
 ./configure \
 --enable-coroutine \
