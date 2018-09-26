@@ -1,10 +1,16 @@
-FROM php:7.1-fpm-jessie
+FROM php:7.1-fpm
 
+# debian 9.x (stretch) 阿里云镜像源
 RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
-    echo "deb http://mirrors.aliyun.com/debian/ jessie main non-free contrib" >/etc/apt/sources.list && \
-    echo "deb http://mirrors.aliyun.com/debian/ jessie-proposed-updates main non-free contrib" >>/etc/apt/sources.list && \
-    echo "deb-src http://mirrors.aliyun.com/debian/ jessie main non-free contrib" >>/etc/apt/sources.list && \
-    echo "deb-src http://mirrors.aliyun.com/debian/ jessie-proposed-updates main non-free contrib" >>/etc/apt/sources.list
+echo "deb http://mirrors.aliyun.com/debian/ stretch main non-free contrib" >/etc/apt/sources.list && \
+echo "deb-src http://mirrors.aliyun.com/debian/ stretch main non-free contrib" >/etc/apt/sources.list && \
+echo "deb http://mirrors.aliyun.com/debian-security stretch/updates main" >/etc/apt/sources.list && \
+echo "deb-src http://mirrors.aliyun.com/debian-security stretch/updates main" >/etc/apt/sources.list && \
+echo "deb http://mirrors.aliyun.com/debian/ stretch-updates main non-free contrib" >/etc/apt/sources.list && \
+echo "deb-src http://mirrors.aliyun.com/debian/ stretch-updates main non-free contrib" >/etc/apt/sources.list && \
+echo "deb http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" >/etc/apt/sources.list && \
+echo "deb-src http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" >/etc/apt/sources.list && \
+
 RUN echo "export TZ='Asia/Shanghai'"  >> /etc/profile
 
 RUN apt-get update -yqq && \
@@ -16,11 +22,10 @@ RUN apt-get install -y --no-install-recommends \
     libz-dev \
     libpq-dev \
     libjpeg-dev \
-    libpng12-dev \
+    libpng-dev \
     libfreetype6-dev \
     libssl-dev \
     libmcrypt-dev \
-    nghttp2 \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pecl install -o -f redis \
@@ -51,7 +56,8 @@ make -j && \
 make install && \
 ldconfig
 
-## nghttp2 prepare
+
+# nghttp2 prepare
 RUN apt-get update -yqq && \
   apt-get install -y --no-install-recommends \
   g++ make binutils autoconf automake autotools-dev libtool pkg-config \
@@ -59,7 +65,7 @@ RUN apt-get update -yqq && \
   libc-ares-dev libjemalloc-dev libsystemd-dev \
   cython python3-dev python-setuptools
 
-## nghttp2
+# nghttp2
 RUN curl -O https://github.com/nghttp2/nghttp2/releases/download/v1.32.0/nghttp2-1.32.0.tar.gz -L && \
 tar zxvf nghttp2-1.32.0.tar.gz && \
 cd nghttp2-1.32.0 && \
@@ -67,9 +73,9 @@ cd nghttp2-1.32.0 && \
 make && make install && ldconfig
 
 ## install swoole
-RUN curl -O https://github.com/swoole/swoole-src/archive/v4.1.0.tar.gz -L && \
-tar zxvf v4.1.0.tar.gz && \
-cd swoole-src-4.1.0 && \
+RUN curl -O https://github.com/swoole/swoole-src/archive/v4.2.1.tar.gz -L && \
+tar zxvf v4.2.1.tar.gz && \
+cd swoole-src-4.2.1 && \
 phpize && \
 ./configure \
 --enable-coroutine \
