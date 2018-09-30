@@ -88,8 +88,16 @@ server {
     access_log /var/log/nginx/laravel_access.log;
 }
 ``` 
+## Composer Install (有需要自行安装，默认没有)
+
+```
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
+chmod +x /usr/local/bin/composer
+```
 
 php 添加扩展  自行修改php-fpm下的DockerFfile
+
 
 
 
