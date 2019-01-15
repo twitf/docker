@@ -1,5 +1,7 @@
 FROM php:7.1-fpm
 
+MAINTAINER "twitf <qiangzaiying123@gmail.com>"
+
 RUN bash
 
 # debian 9.x (stretch) 阿里云镜像源
@@ -33,6 +35,11 @@ RUN apt-get install -y --no-install-recommends \
 RUN pecl install -o -f redis \
     &&  rm -rf /tmp/pear \
     &&  docker-php-ext-enable redis
+# rabbitmq prepare
+RUN apt-get update -yqq && \
+    apt-get install librabbitmq-dev -y && \
+    pecl install amqp && \
+    docker-php-ext-enable amqp
 
 RUN docker-php-ext-install exif
 
@@ -50,13 +57,13 @@ RUN docker-php-ext-configure gd \
         --with-freetype-dir=/usr/include/freetype2 && \
         docker-php-ext-install gd
 
-## install hiredis
-RUN curl -O https://github.com/redis/hiredis/archive/v0.13.3.tar.gz -L && \
-tar zxvf v0.13.3.tar.gz && \
-cd hiredis-0.13.3 && \
-make -j && \
-make install && \
-ldconfig
+## install hiredis PS:4.2.6版本及以后不再需要手动安装和启用, 而是swoole自带
+#RUN curl -O https://github.com/redis/hiredis/archive/v0.13.3.tar.gz -L && \
+#tar zxvf v0.13.3.tar.gz && \
+#cd hiredis-0.13.3 && \
+#make -j && \
+#make install && \
+#ldconfig
 
 
 # nghttp2 prepare
@@ -75,19 +82,26 @@ cd nghttp2-1.32.0 && \
 make && make install && ldconfig
 
 ## install swoole
-RUN curl -O https://github.com/swoole/swoole-src/archive/v4.2.1.tar.gz -L && \
-tar zxvf v4.2.1.tar.gz && \
-cd swoole-src-4.2.1 && \
+RUN curl -O https://github.com/swoole/swoole-src/archive/v4.2.12.tar.gz -L && \
+tar zxvf v4.2.12.tar.gz && \
+cd swoole-src-4.2.12 && \
 phpize && \
 ./configure \
---enable-coroutine \
+##4.0.1或更高版本后不再需要设置
+#--enable-coroutine \
 --enable-openssl  \
 --enable-http2  \
---enable-async-redis \
+##4.2.6版本及以后不再需要手动安装和启用, 而是swoole自带
+#--enable-async-redis \
 --enable-sockets \
 --enable-mysqlnd && \
 make clean && make && make install
 
+## 指定RUN、CMD与ENTRYPOINT命令的工作目录
+WORKDIR /var/www
+
+##提供了容器默认的执行命令。 Dockerfile只允许使用一次CMD指令。 使用多个CMD会抵消之前所有的指令，只有最后一个指令生效
 CMD ["php-fpm"]
 
+## 指定容器在运行时监听的端口
 EXPOSE 9000

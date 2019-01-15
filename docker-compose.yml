@@ -23,16 +23,16 @@ services:
     build:
       context: ./php-fpm
     volumes:
-    - ./php-fpm/php71.ini:/usr/local/etc/php/php.ini
-    - ../:/var/www
+      - ./php-fpm/php71.ini:/usr/local/etc/php/php.ini
+      - ../:/var/www
     expose:
-    - "9000"
+      - "9000"
     extra_hosts:
-    - "dockerhost:10.0.75.0"
+      - "dockerhost:10.0.75.0"
     environment:
-    - PHP_IDE_CONFIG=serverName=twitf
+      - PHP_IDE_CONFIG=serverName=twitf
     networks:
-    - backend
+      - backend
     container_name: php-fpm
 
   ### NGINX Server #########################################
@@ -40,17 +40,17 @@ services:
     build:
       context: ./nginx
     volumes:
-    - ../:/var/www
-    - ./logs/nginx:/var/log/nginx
-    - ./nginx/sites/:/etc/nginx/sites-available
+      - ../:/var/www
+      - ./logs/nginx:/var/log/nginx
+      - ./nginx/sites/:/etc/nginx/sites-available
     ports:
-    - "80:80"
-    - "443:443"
+      - "80:80"
+      - "443:443"
     depends_on:
-    - php-fpm
+      - php-fpm
     networks:
-    - frontend
-    - backend
+      - frontend
+      - backend
     container_name: nginx
 
   ### MySQL ################################################
@@ -58,66 +58,82 @@ services:
     build:
       context: ./mysql
     environment:
-    - MYSQL_DATABASE=default
-    - MYSQL_USER=twitf
-    - MYSQL_PASSWORD=twitf
-    - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=default
+      - MYSQL_USER=twitf
+      - MYSQL_PASSWORD=twitf
+      - MYSQL_ROOT_PASSWORD=root
     volumes:
-    - ./data/mysql:/var/lib/mysql
-    - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./data/mysql:/var/lib/mysql
+      - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     ports:
-    - "3306:3306"
+      - "3306:3306"
     networks:
-    - backend
+      - backend
     container_name: mysql
 
   ### Redis ################################################
   redis:
     build: ./redis
     volumes:
-    - ./data/redis:/data
+      - ./data/redis:/data
     ports:
-    - "6379:6379"
+      - "6379:6379"
     networks:
-    - backend
+      - backend
     container_name: redis
 
   ### phpMyAdmin ###########################################
   phpmyadmin:
     build: ./phpmyadmin
     environment:
-    - PMA_ARBITRARY=1
-    - MYSQL_USER=default
-    - MYSQL_PASSWORD=twitf
-    - MYSQL_ROOT_PASSWORD=root
+      - PMA_ARBITRARY=1
+      - MYSQL_USER=default
+      - MYSQL_PASSWORD=twitf
+      - MYSQL_ROOT_PASSWORD=root
     ports:
-    - "8080:80"
+      - "8080:80"
     depends_on:
-    - "mysql"
+      - "mysql"
     networks:
-    - frontend
-    - backend
+      - frontend
+      - backend
     container_name: phpmyadmin
 
   ### ElasticSearch ########################################
   elasticsearch:
     build: ./elasticsearch
     volumes:
-    - elasticsearch:/usr/share/elasticsearch/data
+      - elasticsearch:/usr/share/elasticsearch/data
     environment:
-    - cluster.name=twitf-cluster
-    - bootstrap.memory_lock=true
-    - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=twitf-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
         soft: -1
         hard: -1
     ports:
-    - "9200:9200"
-    - "9300:9300"
+      - "9200:9200"
+      - "9300:9300"
     depends_on:
-    - php-fpm
+      - php-fpm
     networks:
-    - frontend
-    - backend
+      - frontend
+      - backend
     container_name: elasticSearch
+  ### RabbitMQ ########################################
+  rabbitmq:
+      build: ./rabbitmq
+      ports:
+        - "5672:5672"
+        - "15672:15672"
+        - "15671:15671"
+      privileged: true
+      environment:
+        - RABBITMQ_DEFAULT_USER=root
+        - RABBITMQ_DEFAULT_PASS=123456
+      depends_on:
+        - php-fpm
+      networks:
+        - backend
+      container_name: rabbitmq
