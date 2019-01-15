@@ -1,5 +1,4 @@
 version: '3'
-
 networks:
   frontend:
     driver: bridge
@@ -20,8 +19,11 @@ services:
 
   ### PHP-FPM ##############################################
   php-fpm:
+    env_file: ./.env
     build:
       context: ./php-fpm
+      args:
+        - PHP_VERSION=${PHP_VERSION}
     volumes:
       - ./php-fpm/php71.ini:/usr/local/etc/php/php.ini
       - ../:/var/www
@@ -33,7 +35,7 @@ services:
       - PHP_IDE_CONFIG=serverName=twitf
     networks:
       - backend
-    container_name: php-fpm
+    container_name: php${PHP_VERSION}-fpm
 
   ### NGINX Server #########################################
   nginx:
@@ -43,6 +45,7 @@ services:
       - ../:/var/www
       - ./logs/nginx:/var/log/nginx
       - ./nginx/sites/:/etc/nginx/sites-available
+      - ./nginx/ssl/:/etc/nginx/ssl
     ports:
       - "80:80"
       - "443:443"
@@ -121,19 +124,20 @@ services:
       - frontend
       - backend
     container_name: elasticSearch
+
   ### RabbitMQ ########################################
   rabbitmq:
-      build: ./rabbitmq
-      ports:
-        - "5672:5672"
-        - "15672:15672"
-        - "15671:15671"
-      privileged: true
-      environment:
-        - RABBITMQ_DEFAULT_USER=root
-        - RABBITMQ_DEFAULT_PASS=123456
-      depends_on:
-        - php-fpm
-      networks:
-        - backend
-      container_name: rabbitmq
+    build: ./rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "15671:15671"
+    privileged: true
+    environment:
+      - RABBITMQ_DEFAULT_USER=root
+      - RABBITMQ_DEFAULT_PASS=123456
+    depends_on:
+      - php-fpm
+    networks:
+      - backend
+    container_name: rabbitmq
