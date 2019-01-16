@@ -28,15 +28,15 @@ docker-compose up -d
 
 ## phpMyadmin
 `http://localhost:8080`
-服务器HOST：mysql
-用户名：root
-密码：root
+服务器HOST：`mysql`
+用户名：`root`
+密码：`root`
 
 ## Rabbitmq
 
 `http://localhost:15672`
-用户名：root
-密码：root
+用户名：`root`
+密码：`root`
 
 ## mysql
 
@@ -102,7 +102,12 @@ mv composer.phar /usr/local/bin/composer
 chmod +x /usr/local/bin/composer
 ```
 
-php 添加扩展  自行修改php-fpm下的DockerFfile
+## php 添加扩展
+> 自行修改php-fpm下的DockerFfile 例如：
+
+```
+RUN docker-php-ext-install gd
+```
 
 
 
