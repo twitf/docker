@@ -1,9 +1,5 @@
 ARG PHP_VERSION
 
-ARG HIREDIS_VERSION=0.14.0
-
-ARG NGHTTP2_VERSION=1.35.1
-
 FROM php:${PHP_VERSION}-fpm
 
 MAINTAINER "twitf <qiangzaiying123@gmail.com>"
@@ -46,7 +42,8 @@ RUN pecl install -o -f redis \
 RUN apt-get update -yqq && \
   apt-get install librabbitmq-dev -y && \
   pecl install amqp && \
-  docker-php-ext-enable amqp
+  docker-php-ext-enable amqp && \
+  docker-php-ext-install sockets
 
 RUN docker-php-ext-install exif
 
@@ -55,8 +52,6 @@ RUN docker-php-ext-install mysqli
 RUN docker-php-ext-install pdo_mysql
 
 RUN docker-php-ext-install mcrypt
-
-RUN docker-php-ext-install sockets
 
 RUN docker-php-ext-configure gd \
   --enable-gd-native-ttf \
@@ -72,68 +67,75 @@ RUN apt-get update -yqq && \
   libc-ares-dev libjemalloc-dev libsystemd-dev \
   cython python3-dev python-setuptools
 
+ARG NGHTTP2_VERSION=1.35.1
+
 # nghttp2
-RUN curl -O https://github.com/nghttp2/nghttp2/releases/download/v${NGHTTP2_VERSION}/nghttp2-${NGHTTP2_VERSION}.tar.gz -L && \
-  tar zxvf nghttp2-${NGHTTP2_VERSION}.tar.gz && \
+RUN curl -O https://github.com/nghttp2/nghttp2/archive/v${NGHTTP2_VERSION}.tar.gz -L && \
+  tar zxvf v${NGHTTP2_VERSION}.tar.gz && \
   cd nghttp2-${NGHTTP2_VERSION} && \
+  autoreconf -i && \
+  automake && \
+  autoconf && \
   ./configure && \
   make && make install && ldconfig
 
-RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-  # install hiredis
-  # PS: Swoole 4.2.6版本及以后不再需要手动安装和启用, 而是swoole自带
-  curl -O https://github.com/redis/hiredis/archive/v${HIREDIS_VERSION}.tar.gz -L && \
-  tar zxvf v${HIREDIS_VERSION}.tar.gz && \
-  cd hiredis-${HIREDIS_VERSION} && \
-  make -j && \
-  make install && \
-  ldconfig \
-  fi;
+ARG HIREDIS_VERSION=0.14.0
+
+# install hiredis
+# PS: Swoole 4.2.6版本及以后不再需要手动安装和启用, 而是swoole自带
+RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" || $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
+		  curl -O https://github.com/redis/hiredis/archive/v${HIREDIS_VERSION}.tar.gz -L && \
+		  tar zxvf v${HIREDIS_VERSION}.tar.gz && \
+		  cd hiredis-${HIREDIS_VERSION} && \
+		  make -j && \
+		  make install && \
+		  ldconfig \
+  ;fi
 
 ## install swoole
 ## 2.0.11 是最后一个支持php5的版本
 ## 2.2.0 php7.0
 ## 4.0.1或更高版本后不再需要设置 --enable-coroutine \
-## 4.2.6版本及以后不再需要手动安装hredis和启用--enable-async-redis \, 而是swoole自带
+## 4.2.6版本及以后不再需要手动安装hredis和启用--enable-async-redis \, 而是swoole自带 php5和7.0 都使用
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-  curl -O https://github.com/swoole/swoole-src/archive/v2.0.11.tar.gz -L && \
-  tar zxvf v2.0.11.tar.gz && \
-  cd swoole-src-2.0.11 && \
-  phpize && \
-  ./configure \
-  --enable-coroutine \
-  --enable-openssl  \
-  --enable-http2  \
-  --enable-async-redis \
-  --enable-sockets \
-  --enable-mysqlnd && \
-  make clean && make && make install \
-  else \
-  if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-  curl -O https://github.com/swoole/swoole-src/archive/v2.2.0.tar.gz -L && \
-  tar zxvf vv2.2.0.tar.gz && \
-  cd swoole-src-v2.2.0 && \
-  phpize && \
-  ./configure \
-  --enable-coroutine \
-  --enable-openssl  \
-  --enable-http2  \
-  --enable-async-redis \
-  --enable-sockets \
-  --enable-mysqlnd && \
-  make clean && make && make install \
-  else \
-  curl -O https://github.com/swoole/swoole-src/archive/v4.2.12.tar.gz -L && \
-  cd swoole-src-4.2.12 && \
-  phpize && \
-  ./configure \
-  --enable-openssl  \
-  --enable-http2  \
-  --enable-sockets \
-  --enable-mysqlnd && \
-  make clean && make && make install \
-  fi \
-  fi && \
+	  curl -O https://github.com/swoole/swoole-src/archive/v2.0.11.tar.gz -L && \
+	  tar zxvf v2.0.11.tar.gz && \
+	  cd swoole-src-2.0.11 && \
+	  phpize && \
+	  ./configure \
+	  --enable-coroutine \
+	  --enable-openssl  \
+	  --enable-http2  \
+	  --enable-async-redis \
+	  --enable-mysqlnd && \
+	  make clean && make && make install \
+	;else \
+	  if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
+		  curl -O https://github.com/swoole/swoole-src/archive/v2.2.0.tar.gz -L && \
+		  tar zxvf v2.2.0.tar.gz && \
+		  cd swoole-src-v2.2.0 && \
+		  phpize && \
+		  ./configure \
+		  --enable-coroutine \
+		  --enable-openssl  \
+		  --enable-http2  \
+		  --enable-async-redis \
+		  --enable-sockets \
+		  --enable-mysqlnd && \
+		  make clean && make && make install \
+	  ;else \
+		  curl -O https://github.com/swoole/swoole-src/archive/v4.2.12.tar.gz -L && \
+		  tar zxvf v4.2.12.tar.gz && \
+		  cd swoole-src-4.2.12 && \
+		  phpize && \
+		  ./configure \
+		  --enable-openssl  \
+		  --enable-http2  \
+		  --enable-sockets \
+		  --enable-mysqlnd && \
+		  make clean && make && make install \
+	  ;fi \
+	;fi  && \
   docker-php-ext-enable swoole
 
 ## 指定RUN、CMD与ENTRYPOINT命令的工作目录
