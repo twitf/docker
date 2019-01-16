@@ -113,14 +113,13 @@ RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
 	  if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
 		  curl -O https://github.com/swoole/swoole-src/archive/v2.2.0.tar.gz -L && \
 		  tar zxvf v2.2.0.tar.gz && \
-		  cd swoole-src-v2.2.0 && \
+		  cd swoole-src-2.2.0 && \
 		  phpize && \
 		  ./configure \
 		  --enable-coroutine \
 		  --enable-openssl  \
 		  --enable-http2  \
 		  --enable-async-redis \
-		  --enable-sockets \
 		  --enable-mysqlnd && \
 		  make clean && make && make install \
 	  ;else \
