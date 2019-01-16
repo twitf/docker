@@ -135,7 +135,7 @@ services:
     privileged: true
     environment:
       - RABBITMQ_DEFAULT_USER=root
-      - RABBITMQ_DEFAULT_PASS=123456
+      - RABBITMQ_DEFAULT_PASS=root
     depends_on:
       - php-fpm
     networks:

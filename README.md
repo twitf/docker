@@ -1,6 +1,6 @@
 # docker
 php7.1,swoole,redis,nginx,mysql,elasticsearch
-> 默认上级目录为根目录
+> 默认上级目录为根目录 `php`版本`7.1`,可在当前目录下的.env文件修改
 # install
 
 ```
@@ -29,6 +29,12 @@ docker-compose up -d
 ## phpMyadmin
 `http://localhost:8080`
 服务器HOST：mysql
+用户名：root
+密码：root
+
+## Rabbitmq
+
+`http://localhost:15672`
 用户名：root
 密码：root
 
@@ -87,7 +93,7 @@ server {
     error_log /var/log/nginx/laravel_error.log;
     access_log /var/log/nginx/laravel_access.log;
 }
-``` 
+```
 ## Composer Install (有需要自行安装，默认没有)
 
 ```
