@@ -3,8 +3,20 @@ ARG PHP_VERSION
 FROM php:${PHP_VERSION}-fpm
 
 MAINTAINER "twitf <qiangzaiying123@gmail.com>"
-
+USER root
 RUN bash
+
+ARG PUID=1000
+ARG PGID=1000
+
+# 添加用户 安装ssh 并设置开机启动
+RUN apt-get update -yqq && \
+    pecl channel-update pecl.php.net && \
+    groupadd -g ${PGID} twitf && \
+    useradd -u ${PUID} -g twitf -m twitf -s /bin/bash && \
+    usermod -p "twitf" twitf && \
+    apt-get install ssh && \
+    update-rc.d ssh enable
 
 # debian 9.x (stretch) 阿里云镜像源
 RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
@@ -18,9 +30,6 @@ RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
   echo "deb-src http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" >>/etc/apt/sources.list
 
 RUN echo "export TZ='Asia/Shanghai'"  >> /etc/profile
-
-RUN apt-get update -yqq && \
-  pecl channel-update pecl.php.net
 
 RUN apt-get install -y --no-install-recommends \
   curl \
@@ -136,6 +145,11 @@ RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
 	  ;fi \
 	;fi  && \
   docker-php-ext-enable swoole
+
+# 清理
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    rm /var/log/lastlog /var/log/faillog
 
 ## 指定RUN、CMD与ENTRYPOINT命令的工作目录
 WORKDIR /var/www

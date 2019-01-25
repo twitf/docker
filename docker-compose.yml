@@ -29,6 +29,11 @@ services:
       - ../:/var/www
     expose:
       - "9000"
+    ports:
+      - "22:22"
+      - "9001:9001"
+      - "9002:9002"
+      - "9003:9003"
     extra_hosts:
       - "dockerhost:10.0.75.0"
     environment:
