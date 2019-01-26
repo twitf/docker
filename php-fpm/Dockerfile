@@ -14,9 +14,9 @@ RUN apt-get update -yqq && \
     pecl channel-update pecl.php.net && \
     groupadd -g ${PGID} twitf && \
     useradd -u ${PUID} -g twitf -m twitf -s /bin/bash && \
-    usermod -p "twitf" twitf && \
-    apt-get install ssh && \
-    update-rc.d ssh enable
+    echo 'twitf:twitf' | chpasswd && \
+    #usermod -p "twitf" twitf && \
+    apt-get install -y ssh
 
 # debian 9.x (stretch) 阿里云镜像源
 RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
@@ -31,7 +31,8 @@ RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
 
 RUN echo "export TZ='Asia/Shanghai'"  >> /etc/profile
 
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update -yqq && \
+  apt-get install -y --no-install-recommends \
   curl \
   libmemcached-dev \
   libz-dev \
