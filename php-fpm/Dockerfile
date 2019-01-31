@@ -3,20 +3,38 @@ ARG PHP_VERSION
 FROM php:${PHP_VERSION}-fpm
 
 MAINTAINER "twitf <qiangzaiying123@gmail.com>"
+
 USER root
+
 RUN bash
 
 ARG PUID=1000
 ARG PGID=1000
 
-# 添加用户 安装ssh 并设置开机启动
+# 复制生成的公钥私钥 至缓存目录（使用之后会清除缓存）
+COPY id_rsa /tmp/id_rsa
+COPY id_rsa.pub /tmp/id_rsa.pub
+
+# 设置用户密码 添加用户twitf 安装ssh 设置密码和秘钥登录皆可
 RUN apt-get update -yqq && \
-    pecl channel-update pecl.php.net && \
-    groupadd -g ${PGID} twitf && \
-    useradd -u ${PUID} -g twitf -m twitf -s /bin/bash && \
-    echo 'twitf:twitf' | chpasswd && \
-    #usermod -p "twitf" twitf && \
-    apt-get install -y ssh
+  pecl channel-update pecl.php.net && \
+  groupadd -g ${PGID} twitf && \
+  useradd -u ${PUID} -g twitf -m twitf -s /bin/bash && \
+  echo 'twitf:twitf' | chpasswd && \
+  echo 'root:root' | chpasswd && \
+  apt-get install -y ssh && \
+  mkdir /root/.ssh && \
+  cat /tmp/id_rsa.pub >> /root/.ssh/authorized_keys && \
+  cat /tmp/id_rsa.pub >> /root/.ssh/id_rsa.pub && \
+  cat /tmp/id_rsa >> /root/.ssh/id_rsa && \
+  rm -f /tmp/id_rsa* && \
+  chmod 644 /root/.ssh/authorized_keys /root/.ssh/id_rsa.pub && \
+  chmod 400 /root/.ssh/id_rsa && \
+  cp -rf /root/.ssh /home/twitf && \
+  chown -R twitf:twitf /home/twitf/.ssh && \
+  sed -i '/#PermitRootLogin prohibit-password/a PermitRootLogin yes' /etc/ssh/sshd_config && \
+  sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
+  sed -i 's/#AuthorizedKeysFile/AuthorizedKeysFile/' /etc/ssh/sshd_config
 
 # debian 9.x (stretch) 阿里云镜像源
 RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
@@ -94,12 +112,12 @@ ARG HIREDIS_VERSION=0.14.0
 # install hiredis
 # PS: Swoole 4.2.6版本及以后不再需要手动安装和启用, 而是swoole自带
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" || $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-		  curl -O https://github.com/redis/hiredis/archive/v${HIREDIS_VERSION}.tar.gz -L && \
-		  tar zxvf v${HIREDIS_VERSION}.tar.gz && \
-		  cd hiredis-${HIREDIS_VERSION} && \
-		  make -j && \
-		  make install && \
-		  ldconfig \
+  curl -O https://github.com/redis/hiredis/archive/v${HIREDIS_VERSION}.tar.gz -L && \
+  tar zxvf v${HIREDIS_VERSION}.tar.gz && \
+  cd hiredis-${HIREDIS_VERSION} && \
+  make -j && \
+  make install && \
+  ldconfig \
   ;fi
 
 ## install swoole
@@ -108,55 +126,58 @@ RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" || $(php -r "echo PHP_MINOR_V
 ## 4.0.1或更高版本后不再需要设置 --enable-coroutine \
 ## 4.2.6版本及以后不再需要手动安装hredis和启用--enable-async-redis \, 而是swoole自带 php5和7.0 都使用
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-	  curl -O https://github.com/swoole/swoole-src/archive/v2.0.11.tar.gz -L && \
-	  tar zxvf v2.0.11.tar.gz && \
-	  cd swoole-src-2.0.11 && \
-	  phpize && \
-	  ./configure \
-	  --enable-coroutine \
-	  --enable-openssl  \
-	  --enable-http2  \
-	  --enable-async-redis \
-	  --enable-mysqlnd && \
-	  make clean && make && make install \
-	;else \
-	  if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-		  curl -O https://github.com/swoole/swoole-src/archive/v2.2.0.tar.gz -L && \
-		  tar zxvf v2.2.0.tar.gz && \
-		  cd swoole-src-2.2.0 && \
-		  phpize && \
-		  ./configure \
-		  --enable-coroutine \
-		  --enable-openssl  \
-		  --enable-http2  \
-		  --enable-async-redis \
-		  --enable-mysqlnd && \
-		  make clean && make && make install \
-	  ;else \
-		  curl -O https://github.com/swoole/swoole-src/archive/v4.2.12.tar.gz -L && \
-		  tar zxvf v4.2.12.tar.gz && \
-		  cd swoole-src-4.2.12 && \
-		  phpize && \
-		  ./configure \
-		  --enable-openssl  \
-		  --enable-http2  \
-		  --enable-sockets \
-		  --enable-mysqlnd && \
-		  make clean && make && make install \
-	  ;fi \
-	;fi  && \
+  curl -O https://github.com/swoole/swoole-src/archive/v2.0.11.tar.gz -L && \
+  tar zxvf v2.0.11.tar.gz && \
+  cd swoole-src-2.0.11 && \
+  phpize && \
+  ./configure \
+  --enable-coroutine \
+  --enable-openssl  \
+  --enable-http2  \
+  --enable-async-redis \
+  --enable-mysqlnd && \
+  make clean && make && make install \
+  ;else \
+  if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
+  curl -O https://github.com/swoole/swoole-src/archive/v2.2.0.tar.gz -L && \
+  tar zxvf v2.2.0.tar.gz && \
+  cd swoole-src-2.2.0 && \
+  phpize && \
+  ./configure \
+  --enable-coroutine \
+  --enable-openssl  \
+  --enable-http2  \
+  --enable-async-redis \
+  --enable-mysqlnd && \
+  make clean && make && make install \
+  ;else \
+  curl -O https://github.com/swoole/swoole-src/archive/v4.2.12.tar.gz -L && \
+  tar zxvf v4.2.12.tar.gz && \
+  cd swoole-src-4.2.12 && \
+  phpize && \
+  ./configure \
+  --enable-openssl  \
+  --enable-http2  \
+  --enable-sockets \
+  --enable-mysqlnd && \
+  make clean && make && make install \
+  ;fi \
+  ;fi  && \
   docker-php-ext-enable swoole
 
 # 清理
 RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    rm /var/log/lastlog /var/log/faillog
+  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+  rm /var/log/lastlog /var/log/faillog
 
 ## 指定RUN、CMD与ENTRYPOINT命令的工作目录
 WORKDIR /var/www
 
 ##提供了容器默认的执行命令。 Dockerfile只允许使用一次CMD指令。 使用多个CMD会抵消之前所有的指令，只有最后一个指令生效
-CMD ["php-fpm"]
+#CMD ["php-fpm"]
+
+# 启动ssh
+ENTRYPOINT ["/bin/bash","-c","php-fpm | service ssh start"]
 
 ## 指定容器在运行时监听的端口
 EXPOSE 9000

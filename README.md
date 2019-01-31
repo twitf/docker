@@ -26,6 +26,12 @@ docker-compose up -d
 ```
 # 使用
 
+> SSH登录：
+```bash
+	root:root
+	twitf:twitf
+	秘钥存在于./php-fpm下登录时选中id_rsa私钥即可 当然你也可以自己生成公钥私钥覆盖即可
+```
 ## phpMyadmin
 `http://localhost:8080`
 服务器HOST：`mysql`
