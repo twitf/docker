@@ -11,27 +11,37 @@ docker-compose up -d
 
 # 结构
 ```
-├─data        			`数据存放目录`
-│  ├─mysql    			`mysql数据`
-│  └─redis    			`redis数据`   
+├─data        			`数据目录`
+│ 
 ├─logs        			`日志目录`
-│  └─nginx
-│          error.log    `nginx错误日志`    
+│  
 ├─nginx
 │  │  nginx.conf
-│  └─sites				`域名配置目录`
+│  ├─sites `域名配置目录`
+│  │      
+│  └─ssl `证书目录`
 │          
-├─php-fpm    			`php-fpm配置目录`
-│      php71.ini   		`php配置文件`
+├─php-fpm `php-fpm配置目录`
+│      Dockerfile
+│      id_rsa
+│      id_rsa.pub
+│      php5.6.ini
+│      php7.0.ini
+│      php7.1.ini
+│      php7.2.ini  
+├─phpmyadmin
+│    
+├─rabbitmq
+│    
+├─redis
+│
+│  .env `php 版本配置文件`
+│  docker-compose.yml
+│  README.md   
 ```
 # 使用
 
-> SSH登录：
-```bash
-	root:root
-	twitf:twitf
-	秘钥存在于./php-fpm下登录时选中id_rsa私钥即可 当然你也可以自己生成公钥私钥覆盖即可
-```
+> SSH登录：`root`用户密码为`root`，用户`twitf`用户密码为`twitf`。 秘钥存在于./php-fpm下登录时选中id_rsa私钥即可 当然你也可以自己生成公钥私钥覆盖即可
 ## phpMyadmin
 `http://localhost:8080`
 服务器HOST：`mysql`
