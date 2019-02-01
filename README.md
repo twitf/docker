@@ -39,7 +39,7 @@ docker-compose up -d
 │  docker-compose.yml
 │  README.md   
 ```
-# 使用
+# use
 
 > SSH登录：`root`用户密码为`root`，用户`twitf`密码为`twitf`。 秘钥存在于./php-fpm下登录时选中id_rsa私钥即可 当然你也可以自己生成公钥私钥覆盖即可
 ## phpMyadmin
@@ -119,12 +119,36 @@ chmod +x /usr/local/bin/composer
 ```
 
 ## php 添加扩展
-> 自行修改php-fpm下的DockerFfile 例如：
+> 自行修改php-fpm下的Dockerfile 例如：
 
 ```
 RUN docker-php-ext-install gd
 ```
 
+## 容器添加端口映射
 
+> 例如php-fpm容器需要添加端口，修改`docker-compose.yml`下`service`>`php-fpm`下配置`port`属性。格式：`hostPort:containerPort`  `host`代表主机   `container` 代表容器
 
+### 关闭当前启动的容器(因为有依赖)
 
+```
+docker-compose stop
+```
+### 修改docker-compose.yml
+
+```
+ports:
+  - "9501:9501"
+  - "9502:9502"
+  - "9503:9503"
+```
+### 重新构建容器
+
+```
+docker-compose build php-fpm
+docker-compose up -d
+```
+
+# docker-compose 文档
+
+https://docs.docker.com/compose/compose-file/
