@@ -6,7 +6,9 @@ networks:
     driver: bridge
 
 volumes:
-  mysql:
+  mariadb:
+    driver: local
+  mongo:
     driver: local
   redis:
     driver: local
@@ -62,24 +64,33 @@ services:
       - backend
     container_name: nginx
 
-  ### MySQL ################################################
-  mysql:
+  ### MariaDB ################################################
+  mariadb:
     build:
-      context: ./mysql
+      context: ./mariadb
     environment:
       - MYSQL_DATABASE=default
       - MYSQL_USER=twitf
       - MYSQL_PASSWORD=twitf
       - MYSQL_ROOT_PASSWORD=root
     volumes:
-      - ./data/mysql:/var/lib/mysql
-      - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - mariadb:/var/lib/mysql
+      - ./mariadb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
     networks:
       - backend
-    container_name: mysql
-
+    container_name: mariadb
+  ### MongoDB ##############################################
+  mongo:
+    build: ./mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo:/data/db
+    networks:
+      - backend
+    container_name: mongo
   ### Redis ################################################
   redis:
     build: ./redis
@@ -102,7 +113,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - "mysql"
+      - "mariadb"
     networks:
       - frontend
       - backend
