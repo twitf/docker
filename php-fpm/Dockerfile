@@ -19,7 +19,7 @@ COPY id_rsa.pub /tmp/id_rsa.pub
 RUN apt-get update -yqq && \
   pecl channel-update pecl.php.net && \
   groupadd -g ${PGID} twitf && \
-  useradd -u ${PUID} -g twitf -m twitf -s /bin/bash && \
+  useradd -u ${PUID} -g twitf -m twitf -s /bin/zsh && \
   echo 'twitf:twitf' | chpasswd && \
   echo 'root:root' | chpasswd && \
   apt-get install -y ssh && \
@@ -47,11 +47,13 @@ RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
   echo "deb http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" >>/etc/apt/sources.list && \
   echo "deb-src http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" >>/etc/apt/sources.list
 
-RUN echo "export TZ='Asia/Shanghai'"  >> /etc/profile
+RUN echo "export TZ='Asia/Shanghai'" >> /etc/profile
 
 RUN apt-get update -yqq && \
   apt-get install -y --no-install-recommends \
   curl \
+  zsh \
+  git \
   libmemcached-dev \
   libz-dev \
   libpq-dev \
@@ -159,6 +161,39 @@ RUN curl -O https://github.com/swoole/swoole-src/archive/v1.10.5.tar.gz -L && \
   --enable-mysqlnd && \
   make clean && make && make install && \
 	docker-php-ext-enable swoole
+
+# install composer
+RUN curl -sS https://getcomposer.org/installer | php \
+	&& mv composer.phar /usr/local/bin/composer \
+	&& chmod +x /usr/local/bin/composer
+
+# install node
+ENV NODE_VERSION 11.11.0
+
+RUN curl -fsSLO --compressed "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
+  && tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
+  && rm "node-v$NODE_VERSION-linux-x64.tar.xz" \
+  && ln -s /usr/local/bin/node /usr/local/bin/nodejs
+
+# install yarn pack manager tool
+ENV YARN_VERSION 1.13.0
+
+RUN curl -fsSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz" \
+  && mkdir -p /opt \
+  && tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/ \
+  && ln -s /opt/yarn-v$YARN_VERSION/bin/yarn /usr/local/bin/yarn \
+  && ln -s /opt/yarn-v$YARN_VERSION/bin/yarnpkg /usr/local/bin/yarnpkg \
+  && rm yarn-v$YARN_VERSION.tar.gz
+
+## install ohmyzsh
+#RUN sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" \
+#	# clone zsh-syntax-highlighting
+#	&& git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting \
+#	# clone zsh-autosuggestions
+#	&& git clone git://github.com/zsh-users/zsh-autosuggestions $ZSH_CUSTOM/plugins/zsh-autosuggestions \
+#	# open plugins
+#	&& sed -i 's/^plugins.*/plugins==(git zsh-syntax-highlighting z zsh-autosuggestions)/' \
+#	&& source ~/.zshrc
 
 # 清理
 RUN apt-get clean && \
