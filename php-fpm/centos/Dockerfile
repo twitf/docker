@@ -4,13 +4,15 @@ ENV PHP_VERSION 7.2.19
 
 ENV SWOOLE_VERSION 4.3.5
 
+# install Development Tools
 RUN yum -y groupinstall 'Development Tools'
 
+# install dependency
 RUN yum -y install libxml2 libxml2-devel curl-devel libjpeg-devel libpng-devel freetype-devel libicu-devel libxslt-devel
  openssl-devel glibc-headers gcc-c++ bzip2 bzip2-devel openldap openldap-devel unixODBC unixODBC-devel net-snmp net-snmp-devel
- expat expat-devel
+ expat expat-devel git
 
-#开始下载php源码 并编译
+# install php
 RUN cd /www/tmp && \
   curl -O php${PHP_VERSION}.tar.gz http://php.net/distributions/php-${PHP_VERSION}.tar.gz -L && \
   tar -zxvf ${PHP_VERSION}.tar.gz && \
@@ -61,15 +63,15 @@ RUN cd /www/tmp && \
     --with-mhash && \
     make && make install
 
-#添加配置文件
+# add php config file
 RUN cp -f php.ini-development /www/server/php/etc/php.ini && \
   cp /www/server/php/etc/php-fpm.d/www.conf.default /www/server/php/etc/php-fpm.d/www.conf && \
   cp /www/server/php/etc/php-fpm.conf.default /www/server/php/etc/php-fpm.conf
 
-#添加php环境变量
+# add php environment variable
 RUN echo 'PATH=$PATH:/www/server/php/bin \nPATH=$PATH:/www/server/php/sbin \n' >> /etc/profile && source /etc/profile
 
-#下载swoole源码并编译
+# install swoole
 RUN curl -O https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -L && \
   tar -zxvf v${SWOOLE_VERSION}.tar.gz && \
   cd swoole-src-${SWOOLE_VERSION} && \
@@ -80,3 +82,8 @@ RUN curl -O https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.
   --enable-http2  \
   --enable-mysqlnd && \
   make clean && make && make install
+
+# install composer
+RUN curl -sS https://getcomposer.org/installer | php \
+  && mv composer.phar /usr/local/bin/composer \
+  && chmod +x /usr/local/bin/composer
