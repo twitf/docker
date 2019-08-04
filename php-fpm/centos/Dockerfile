@@ -1,8 +1,8 @@
 FROM centos:latest
 
-ENV PHP_VERSION 7.2.20
+ENV PHP_VERSION 7.2.21
 
-ENV SWOOLE_VERSION 4.3.6
+ENV SWOOLE_VERSION 4.4.3
 
 # install Development Tools
 RUN yum -y clean all && yum -y update &&yum -y groupinstall 'Development Tools'
@@ -13,13 +13,6 @@ RUN yum -y install openssh-clients openssh-server
 ENV PGID 1000
 
 ENV PUID 1000
-https://github.com/skvadrik/re2c/releases/download/1.2/re2c-1.2.tar.xz
-RUN wget -q -O r1.2.tar.gz https://github.com/skvadrik/re2c/archive/1.2.tar.gz \
-    && tar xzf 1.2.tar.gz \
-    && cd 1.2.tar.gz \
-    && ./configure \
-    && make \
-    && make install \
 
 # add user
 RUN groupadd -g ${PGID} twitf && \
@@ -33,6 +26,13 @@ RUN yum -y install libxml2 libxml2-devel curl-devel libjpeg-devel libpng-devel f
   expat expat-devel git
 
 RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/php}
+
+RUN curl -O https://github.com/skvadrik/re2c/releases/download/1.1.1/re2c-1.1.1.tar.gz -L && \
+    tar -zxvf re2c-1.1.1.tar.gz && \
+    cd re2c-1.1.1 && \
+    ./configure && \
+    make && \
+    make install
 
 # install php
 RUN cd /www/tmp && \
@@ -91,7 +91,7 @@ RUN cd /www/tmp/php-${PHP_VERSION} && \
   cp /www/server/php/etc/php-fpm.d/www.conf.default /www/server/php/etc/php-fpm.d/www.conf && \
   cp /www/server/php/etc/php-fpm.conf.default /www/server/php/etc/php-fpm.conf
 
-# add php environment variable
+# add php environment variable && install swoole composer
 RUN echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
   echo 'PATH=$PATH:/www/server/php/sbin' >> /etc/profile && \
   echo 'export PATH' >> /etc/profile && \
