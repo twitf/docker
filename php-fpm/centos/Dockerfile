@@ -4,19 +4,26 @@ ENV PHP_VERSION 7.2.21
 
 ENV SWOOLE_VERSION 4.4.3
 
+ENV PHP_PATH /www/server/php
+
+ENV TMP_PATH /www/tmp
+
+RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/php}
+
+RUN rpm --import /etc/pki/rpm-gpg/RPM*
+
 # install Development Tools
 RUN yum -y clean all && yum -y update &&yum -y groupinstall 'Development Tools'
 
 # install ssh
-RUN yum -y install openssh-clients openssh-server
-
-ENV PGID 1000
-
-ENV PUID 1000
+RUN yum -y install openssh-clients openssh-server && \
+  ssh-keygen -q -t rsa -b 2048 -f /etc/ssh/ssh_host_rsa_key -N '' && \
+  ssh-keygen -q -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' && \
+  ssh-keygen -t dsa -f /etc/ssh/ssh_host_ed25519_key -N ''
 
 # add user
-RUN groupadd -g ${PGID} twitf && \
-  useradd -u ${PUID} -g twitf -m twitf -s /bin/bash && \
+RUN groupadd -g 1000 twitf && \
+  useradd -u 1000 -g twitf -m twitf -s /bin/bash && \
   echo 'twitf:twitf' | chpasswd && \
   echo 'root:root' | chpasswd
 
@@ -25,14 +32,14 @@ RUN yum -y install libxml2 libxml2-devel curl-devel libjpeg-devel libpng-devel f
   openssl-devel glibc-headers gcc-c++ bzip2 bzip2-devel openldap openldap-devel unixODBC unixODBC-devel net-snmp net-snmp-devel \
   expat expat-devel git
 
-RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/php}
-
-RUN curl -O https://github.com/skvadrik/re2c/releases/download/1.1.1/re2c-1.1.1.tar.gz -L && \
-    tar -zxvf re2c-1.1.1.tar.gz && \
-    cd re2c-1.1.1 && \
-    ./configure && \
-    make && \
-    make install
+# install re2c
+ENV RE2C_VERSION 0.16
+RUN curl -O https://github.com/skvadrik/re2c/releases/download/${RE2C_VERSION}/re2c-${RE2C_VERSION}.tar.gz -L && \
+  tar -zxvf re2c-${RE2C_VERSION}.tar.gz && \
+  cd re2c-${RE2C_VERSION} && \
+  ./configure && \
+  make && \
+  make install
 
 # install php
 RUN cd /www/tmp && \
@@ -40,10 +47,10 @@ RUN cd /www/tmp && \
   tar -zxvf php-${PHP_VERSION}.tar.gz && \
   cd /www/tmp/php-${PHP_VERSION} && \
   ./configure \
-  --prefix=/www/server/php \
-  --with-config-file-path=/www/server/php/etc \
-  --with-config-file-scan-dir=/www/server/php/etc/php.d \
-  --sysconfdir=/www/server/php/etc \
+  --prefix=${PHP_PATH} \
+  --with-config-file-path=${PHP_PATH}/etc \
+  --with-config-file-scan-dir=${PHP_PATH}/etc/php.d \
+  --sysconfdir=${PHP_PATH}/etc \
   --with-libdir=lib64 \
   --enable-fd-setsize=65536 \
   --enable-mysqlnd \
@@ -86,29 +93,42 @@ RUN cd /www/tmp && \
   make && make install
 
 # add php config file
-RUN cd /www/tmp/php-${PHP_VERSION} && \
-  cp -f php.ini-development /www/server/php/etc/php.ini && \
-  cp /www/server/php/etc/php-fpm.d/www.conf.default /www/server/php/etc/php-fpm.d/www.conf && \
-  cp /www/server/php/etc/php-fpm.conf.default /www/server/php/etc/php-fpm.conf
+RUN cd ${TMP_PATH}/php-${PHP_VERSION} && \
+  cp -f php.ini-development ${PHP_PATH}/etc/php.ini && \
+  cp ${PHP_PATH}/etc/php-fpm.d/www.conf.default ${PHP_PATH}/etc/php-fpm.d/www.conf && \
+  cp ${PHP_PATH}/etc/php-fpm.conf.default ${PHP_PATH}/etc/php-fpm.conf
 
 # add php environment variable && install swoole composer
-RUN echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
-  echo 'PATH=$PATH:/www/server/php/sbin' >> /etc/profile && \
+RUN echo 'PATH=$PATH:${PHP_PATH}/bin' >> /etc/profile && \
+  echo 'PATH=$PATH:${PHP_PATH}/sbin' >> /etc/profile && \
   echo 'export PATH' >> /etc/profile && \
-  source /etc/profile && \
+  source /etc/profile
+
+#install swoole
+RUN cd ${TMP_PATH} && \
   curl -O https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -L && \
   tar -zxvf v${SWOOLE_VERSION}.tar.gz && \
   cd swoole-src-${SWOOLE_VERSION} && \
-  phpize && \
+  ${PHP_DIR}/phpize && \
   ./configure \
-  --with-php-config=/www/server/php/bin/php-config \
+  --with-php-config=${PHP_PATH}/bin/php-config \
   --enable-openssl \
   --enable-http2  \
   --enable-mysqlnd && \
-  make clean && make && make install && \
-  curl -sS https://getcomposer.org/installer | php \
+  make clean && make && make install
+
+# install composer
+RUN cd ${TMP_PATH} && \
+  curl -sS https://getcomposer.org/installer | ${PHP_PATH}/bin/php \
   && mv composer.phar /usr/local/bin/composer \
   && chmod +x /usr/local/bin/composer
+
+RUN cd ${SRC_DIR} \
+	&& curl -s https://pypi.org/simple/pip/ \
+	&& yum install -y python-setuptools \
+    && yum clean all \
+    && easy_install pip \
+    && pip install supervisor distribute
 
 EXPOSE 22
 
