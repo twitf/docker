@@ -1,19 +1,19 @@
 FROM centos:latest
 
-ENV PHP_VERSION 7.2.21
+ENV PHP_VERSION 7.2.22
 
-ENV SWOOLE_VERSION 4.4.3
+ENV SWOOLE_VERSION 4.4.5
 
 ENV PHP_PATH /www/server/php
-
+ENV SUPERVISOR_PATH /www/server/supervisor
 ENV TMP_PATH /www/tmp
 
-RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/php}
+RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/{php,supervisor/conf}}
 
 RUN rpm --import /etc/pki/rpm-gpg/RPM*
 
 # install Development Tools
-RUN yum -y clean all && yum -y update &&yum -y groupinstall 'Development Tools'
+RUN yum -y clean all && yum -y update && yum -y groupinstall 'Development Tools' && yum -y install epel-release
 
 # install ssh
 RUN yum -y install openssh-clients openssh-server && \
@@ -30,22 +30,24 @@ RUN groupadd -g 1000 twitf && \
 # install dependency
 RUN yum -y install libxml2 libxml2-devel curl-devel libjpeg-devel libpng-devel freetype-devel libicu-devel libxslt-devel \
   openssl-devel glibc-headers gcc-c++ bzip2 bzip2-devel openldap openldap-devel unixODBC unixODBC-devel net-snmp net-snmp-devel \
-  expat expat-devel git
+  expat expat-devel bison git
 
 # install re2c
-ENV RE2C_VERSION 0.16
-RUN curl -O https://github.com/skvadrik/re2c/releases/download/${RE2C_VERSION}/re2c-${RE2C_VERSION}.tar.gz -L && \
-  tar -zxvf re2c-${RE2C_VERSION}.tar.gz && \
+ENV RE2C_VERSION 1.2.1
+RUN cd ${TMP_PATH} && \
+  curl -O https://github.com/skvadrik/re2c/releases/download/${RE2C_VERSION}/re2c-${RE2C_VERSION}.tar.xz -L && \
+  # tar -zxvf re2c-${RE2C_VERSION}.tar.gz && \
+  tar -Jxvf re2c-${RE2C_VERSION}.tar.xz && \
   cd re2c-${RE2C_VERSION} && \
   ./configure && \
   make && \
   make install
 
 # install php
-RUN cd /www/tmp && \
+RUN cd ${TMP_PATH} && \
   curl -O https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz -L && \
   tar -zxvf php-${PHP_VERSION}.tar.gz && \
-  cd /www/tmp/php-${PHP_VERSION} && \
+  cd ${TMP_PATH}/php-${PHP_VERSION} && \
   ./configure \
   --prefix=${PHP_PATH} \
   --with-config-file-path=${PHP_PATH}/etc \
@@ -99,8 +101,8 @@ RUN cd ${TMP_PATH}/php-${PHP_VERSION} && \
   cp ${PHP_PATH}/etc/php-fpm.conf.default ${PHP_PATH}/etc/php-fpm.conf
 
 # add php environment variable && install swoole composer
-RUN echo 'PATH=$PATH:${PHP_PATH}/bin' >> /etc/profile && \
-  echo 'PATH=$PATH:${PHP_PATH}/sbin' >> /etc/profile && \
+RUN echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
+  echo 'PATH=$PATH:/www/server/php/sbin' >> /etc/profile && \
   echo 'export PATH' >> /etc/profile && \
   source /etc/profile
 
@@ -109,7 +111,7 @@ RUN cd ${TMP_PATH} && \
   curl -O https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -L && \
   tar -zxvf v${SWOOLE_VERSION}.tar.gz && \
   cd swoole-src-${SWOOLE_VERSION} && \
-  ${PHP_DIR}/phpize && \
+  ${PHP_PATH}/bin/phpize && \
   ./configure \
   --with-php-config=${PHP_PATH}/bin/php-config \
   --enable-openssl \
@@ -123,12 +125,13 @@ RUN cd ${TMP_PATH} && \
   && mv composer.phar /usr/local/bin/composer \
   && chmod +x /usr/local/bin/composer
 
-RUN cd ${SRC_DIR} \
-	&& curl -s https://pypi.org/simple/pip/ \
-	&& yum install -y python-setuptools \
-    && yum clean all \
-    && easy_install pip \
-    && pip install supervisor distribute
+# RUN nohup supervisord -c ${SUPERVISOR_PATH}/supervisord.conf
+RUN yum install -y supervisor && \
+  sed -i 's/files = supervisord.d/*.ini/files = /www/server/supervisor/conf/*.ini/g' && \
+  sed -i 's/logfile=/var/log/supervisor/supervisord.log/logfile=/www/server/supervisor/supervisord.log/g'
+  
+# 清理缓存 
+RUN yum -y clean all && rm -rf ${TMP_PATH}/*
 
 EXPOSE 22
 
