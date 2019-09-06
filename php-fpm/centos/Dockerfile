@@ -127,10 +127,10 @@ RUN cd ${TMP_PATH} && \
 
 # RUN nohup supervisord -c ${SUPERVISOR_PATH}/supervisord.conf
 RUN yum install -y supervisor && \
-  sed -i 's!files = supervisord.d/*.ini!files = /www/server/supervisor/conf/*.ini!g' && \
-  sed -i 's!logfile=/var/log/supervisor/supervisord.log!logfile=/www/server/supervisor/supervisord.log!g'
-  
-# 清理缓存 
+  sed -i 's!files = supervisord.d/*.ini!files = /www/server/supervisor/conf/*.ini!g' /etc/supervisord.conf && \
+  sed -i 's!logfile=/var/log/supervisor/supervisord.log!logfile=/www/server/supervisor/supervisord.log!g' /etc/supervisord.conf
+
+# 清理缓存
 RUN yum -y clean all && rm -rf ${TMP_PATH}/*
 
 EXPOSE 22
