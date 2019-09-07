@@ -8,7 +8,15 @@ ENV PHP_PATH /www/server/php
 ENV SUPERVISOR_PATH /www/server/supervisor
 ENV TMP_PATH /www/tmp
 
+# add user
+RUN groupadd -g 1000 twitf && \
+  useradd -u 1000 -g twitf -m twitf -s /bin/bash && \
+  echo 'twitf:twitf' | chpasswd && \
+  echo 'root:root' | chpasswd
+
 RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/{php,supervisor/conf}}
+
+RUN chown -R twitf:twitf /www
 
 RUN rpm --import /etc/pki/rpm-gpg/RPM*
 
@@ -20,12 +28,6 @@ RUN yum -y install openssh-clients openssh-server && \
   ssh-keygen -q -t rsa -b 2048 -f /etc/ssh/ssh_host_rsa_key -N '' && \
   ssh-keygen -q -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' && \
   ssh-keygen -t dsa -f /etc/ssh/ssh_host_ed25519_key -N ''
-
-# add user
-RUN groupadd -g 1000 twitf && \
-  useradd -u 1000 -g twitf -m twitf -s /bin/bash && \
-  echo 'twitf:twitf' | chpasswd && \
-  echo 'root:root' | chpasswd
 
 # install dependency
 RUN yum -y install libxml2 libxml2-devel curl-devel libjpeg-devel libpng-devel freetype-devel libicu-devel libxslt-devel \
@@ -127,7 +129,7 @@ RUN cd ${TMP_PATH} && \
 
 # RUN nohup supervisord -c ${SUPERVISOR_PATH}/supervisord.conf
 RUN yum install -y supervisor && \
-  sed -i 's!files = supervisord.d/*.ini!files = /www/server/supervisor/conf/*.ini!g' /etc/supervisord.conf && \
+  sed -i sed -i 's!files = supervisord.d/*.!files = /www/server/supervisor/conf/*!g' /etc/supervisord.conf && \
   sed -i 's!logfile=/var/log/supervisor/supervisord.log!logfile=/www/server/supervisor/supervisord.log!g' /etc/supervisord.conf
 
 # 清理缓存
