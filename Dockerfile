@@ -127,9 +127,9 @@ RUN cd ${TMP_PATH} && \
   && mv composer.phar /usr/local/bin/composer \
   && chmod +x /usr/local/bin/composer
 
-# RUN nohup supervisord -c ${SUPERVISOR_PATH}/supervisord.conf
+# install supervisord
 RUN yum install -y supervisor && \
-  sed -i sed -i 's!files = supervisord.d/*.!files = /www/server/supervisor/conf/*!g' /etc/supervisord.conf && \
+  sed -i 's!files = supervisord.d/*.!files = /www/server/supervisor/conf/*!g' /etc/supervisord.conf && \
   sed -i 's!logfile=/var/log/supervisor/supervisord.log!logfile=/www/server/supervisor/supervisord.log!g' /etc/supervisord.conf
 
 # 清理缓存
