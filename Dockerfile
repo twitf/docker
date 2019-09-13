@@ -8,6 +8,8 @@ ENV PHP_PATH /www/server/php
 ENV SUPERVISOR_PATH /www/server/supervisor
 ENV TMP_PATH /www/tmp
 
+COPY ./enable-php-extension /usr/local/bin/
+
 # add user
 RUN groupadd -g 1000 twitf && \
   useradd -u 1000 -g twitf -m twitf -s /bin/bash && \
@@ -94,7 +96,8 @@ RUN cd ${TMP_PATH} && \
   --with-openssl \
   --with-curl=/usr/bin/curl \
   --with-mhash && \
-  make && make install
+  make && make install && \
+  enable-php-extension swoole
 
 # add php config file
 RUN cd ${TMP_PATH}/php-${PHP_VERSION} && \
@@ -108,7 +111,7 @@ RUN echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
   echo 'export PATH' >> /etc/profile && \
   source /etc/profile
 
-#install swoole
+#install swoole extension
 RUN cd ${TMP_PATH} && \
   curl -O https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -L && \
   tar -zxvf v${SWOOLE_VERSION}.tar.gz && \
@@ -120,6 +123,9 @@ RUN cd ${TMP_PATH} && \
   --enable-http2  \
   --enable-mysqlnd && \
   make clean && make && make install
+
+# install redis  extension
+RUN pecl install -o -f redis && enable-php-extension redis
 
 # install composer
 RUN cd ${TMP_PATH} && \
