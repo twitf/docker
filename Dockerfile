@@ -10,7 +10,7 @@ ENV TMP_PATH /www/tmp
 
 # add extension open
 COPY ./enable-php-extension /usr/local/bin/
-RUN chmod +x /usr/local/bin/ enable-php-extension
+RUN chmod +x /usr/local/bin/enable-php-extension
 
 # add user
 RUN groupadd -g 1000 twitf && \
