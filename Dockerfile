@@ -8,7 +8,9 @@ ENV PHP_PATH /www/server/php
 ENV SUPERVISOR_PATH /www/server/supervisor
 ENV TMP_PATH /www/tmp
 
+# add extension open
 COPY ./enable-php-extension /usr/local/bin/
+RUN chmod +x /usr/local/bin/ enable-php-extension
 
 # add user
 RUN groupadd -g 1000 twitf && \
@@ -16,9 +18,7 @@ RUN groupadd -g 1000 twitf && \
   echo 'twitf:twitf' | chpasswd && \
   echo 'root:root' | chpasswd
 
-RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/{php,supervisor/conf}}
-
-RUN chown -R twitf:twitf /www
+RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/{php,supervisor/conf}} &&  chown -R twitf:twitf /www
 
 RUN rpm --import /etc/pki/rpm-gpg/RPM*
 
