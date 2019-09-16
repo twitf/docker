@@ -96,8 +96,7 @@ RUN cd ${TMP_PATH} && \
   --with-openssl \
   --with-curl=/usr/bin/curl \
   --with-mhash && \
-  make && make install && \
-  enable-php-extension swoole
+  make && make install
 
 # add php config file
 RUN cd ${TMP_PATH}/php-${PHP_VERSION} && \
@@ -122,7 +121,7 @@ RUN cd ${TMP_PATH} && \
   --enable-openssl \
   --enable-http2  \
   --enable-mysqlnd && \
-  make clean && make && make install
+  make clean && make && make install && enable-php-extension swoole
 
 # install redis  extension
 RUN pecl install -o -f redis && enable-php-extension redis
