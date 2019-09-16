@@ -124,7 +124,7 @@ RUN cd ${TMP_PATH} && \
   make clean && make && make install && enable-php-extension swoole
 
 # install redis  extension
-RUN pecl install -o -f redis && enable-php-extension redis
+RUN /www/server/php/bin/pecl install -o -f redis && enable-php-extension redis
 
 # install composer
 RUN cd ${TMP_PATH} && \
