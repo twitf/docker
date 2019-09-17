@@ -16,7 +16,8 @@ RUN chmod +x /usr/local/bin/enable-php-extension
 RUN groupadd -g 1000 twitf && \
   useradd -u 1000 -g twitf -m twitf -s /bin/bash && \
   echo 'twitf:twitf' | chpasswd && \
-  echo 'root:root' | chpasswd
+  echo 'root:root' | chpasswd && \
+  ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/{php,supervisor/conf}} &&  chown -R twitf:twitf /www
 
