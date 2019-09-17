@@ -8,15 +8,17 @@ ENV PHP_PATH /www/server/php
 ENV SUPERVISOR_PATH /www/server/supervisor
 ENV TMP_PATH /www/tmp
 
+# add extension open
+COPY ./enable-php-extension /usr/local/bin/
+RUN chmod +x /usr/local/bin/enable-php-extension
+
 # add user
 RUN groupadd -g 1000 twitf && \
   useradd -u 1000 -g twitf -m twitf -s /bin/bash && \
   echo 'twitf:twitf' | chpasswd && \
   echo 'root:root' | chpasswd
 
-RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/{php,supervisor/conf}}
-
-RUN chown -R twitf:twitf /www
+RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/{php,supervisor/conf}} &&  chown -R twitf:twitf /www
 
 RUN rpm --import /etc/pki/rpm-gpg/RPM*
 
@@ -108,7 +110,7 @@ RUN echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
   echo 'export PATH' >> /etc/profile && \
   source /etc/profile
 
-#install swoole
+#install swoole extension
 RUN cd ${TMP_PATH} && \
   curl -O https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -L && \
   tar -zxvf v${SWOOLE_VERSION}.tar.gz && \
@@ -119,7 +121,10 @@ RUN cd ${TMP_PATH} && \
   --enable-openssl \
   --enable-http2  \
   --enable-mysqlnd && \
-  make clean && make && make install
+  make clean && make && make install && enable-php-extension swoole
+
+# install redis  extension
+RUN /www/server/php/bin/pecl install -o -f redis && enable-php-extension redis
 
 # install composer
 RUN cd ${TMP_PATH} && \
