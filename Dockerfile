@@ -1,8 +1,8 @@
 FROM centos:latest
 
-ENV PHP_VERSION 7.2.22
+ENV PHP_VERSION 7.2.23
 
-ENV SWOOLE_VERSION 4.4.5
+ENV SWOOLE_VERSION 4.4.7
 
 ENV PHP_PATH /www/server/php
 ENV SUPERVISOR_PATH /www/server/supervisor
