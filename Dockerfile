@@ -30,7 +30,8 @@ RUN yum -y clean all && yum -y update && yum -y groupinstall 'Development Tools'
 RUN yum -y install openssh-clients openssh-server && \
   ssh-keygen -q -t rsa -b 2048 -f /etc/ssh/ssh_host_rsa_key -N '' && \
   ssh-keygen -q -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' && \
-  ssh-keygen -t dsa -f /etc/ssh/ssh_host_ed25519_key -N ''
+  ssh-keygen -t dsa -f /etc/ssh/ssh_host_ed25519_key -N '' && \
+  sed -i -r 's/^(.*pam_nologin.so)/#\1/' /etc/pam.d/sshd
 
 # install dependency
 RUN yum -y install libxml2 libxml2-devel curl-devel libjpeg-devel libpng-devel freetype-devel libicu-devel libxslt-devel \
@@ -143,4 +144,4 @@ RUN yum -y clean all && rm -rf ${TMP_PATH}/*
 
 EXPOSE 22
 
-ENTRYPOINT ["/bin/bash","-c","/usr/sbin/sshd -D | supervisord -c /etc/supervisord.conf"]
+ENTRYPOINT ["/bin/bash","-c","/usr/sbin/sshd -D"]
