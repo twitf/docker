@@ -2,13 +2,13 @@
 ```shell script
 docker run --privileged -it -d  --hostname=twitf  --name=twitf  -v D:/wwwroot:/www/wwwroot -p 2203:22 twitf/php72-swoole4
 ```
-> 默认上级目录为根目录 `php`版本`7.1`,可在当前目录下的.env文件修改
+
 # install
 
 ```shell script
 git clone https://github.com/twitf/docker.git
 cd docker
-docker-compose up -d
+docker build -t twitf/php72-swoole4
 ```
 
 # 目录 /www
