@@ -36,7 +36,7 @@ RUN yum -y install openssh-clients openssh-server && \
 # install dependency
 RUN yum -y install libxml2 libxml2-devel curl-devel libjpeg-devel libpng-devel freetype-devel libicu-devel libxslt-devel \
   openssl-devel glibc-headers gcc-c++ bzip2 bzip2-devel openldap openldap-devel unixODBC unixODBC-devel net-snmp net-snmp-devel \
-  expat expat-devel bison git
+  expat expat-devel bison git libsqlite3x-devel oniguruma-devel
 
 # install re2c
 ENV RE2C_VERSION 1.2.1
@@ -79,6 +79,7 @@ RUN cd ${TMP_PATH} && \
   --enable-wddx \
   --enable-opcache \
   --with-gettext \
+  --enable-gd \
   --with-xsl \
   --with-libexpat-dir \
   --with-xmlrpc \
@@ -88,7 +89,6 @@ RUN cd ${TMP_PATH} && \
   --with-mysqli=mysqlnd \
   --with-pdo-mysql=mysqlnd \
   --with-pdo-odbc=unixODBC,/usr \
-  --with-gd \
   --with-jpeg-dir \
   --with-png-dir \
   --with-zlib-dir \
