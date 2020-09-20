@@ -1,8 +1,8 @@
 FROM centos:7
 
-ENV PHP_VERSION 7.4.9
+ENV PHP_VERSION 7.4.10
 
-ENV SWOOLE_VERSION 4.5.2
+ENV SWOOLE_VERSION 4.5.4
 
 ENV PHP_PATH /www/server/php
 ENV SUPERVISOR_PATH /www/server/supervisor
@@ -36,10 +36,11 @@ RUN yum -y install openssh-clients openssh-server && \
 # install dependency
 RUN yum -y install libxml2 libxml2-devel curl-devel libjpeg-devel libpng-devel freetype-devel libicu-devel libxslt-devel \
   openssl-devel glibc-headers gcc-c++ bzip2 bzip2-devel openldap openldap-devel unixODBC unixODBC-devel net-snmp net-snmp-devel \
-  expat expat-devel bison git libsqlite3x-devel oniguruma-devel libzip
+  expat expat-devel bison git libsqlite3x-devel oniguruma-devel cmake3
 
-# install re2c
+# install re2c libzip
 ENV RE2C_VERSION 1.2.1
+ENV LIBZIP_VERSION 1.7.3
 RUN cd ${TMP_PATH} && \
   curl -O https://github.com/skvadrik/re2c/releases/download/${RE2C_VERSION}/re2c-${RE2C_VERSION}.tar.xz -L && \
   # tar -zxvf re2c-${RE2C_VERSION}.tar.gz && \
@@ -47,7 +48,14 @@ RUN cd ${TMP_PATH} && \
   cd re2c-${RE2C_VERSION} && \
   ./configure && \
   make && \
-  make install
+  make install && \
+  curl -O https://github.com/nih-at/libzip/releases/download/v${LIBZIP_VERSION}/libzip-${LIBZIP_VERSION}.tar.xz -L && \
+  tar -Jxvf tar -Jxvf libzip-${LIBZIP_VERSION}.tar.xz && \
+  cd libzip-${LIBZIP_VERSION} && \
+  mkdir build && \
+  cd build && \
+  cmake3 .. && \
+  make && make install
 
 # install php
 RUN cd ${TMP_PATH} && \
@@ -101,18 +109,17 @@ RUN cd ${TMP_PATH} && \
   make && make install
 
 # add php config file
+# add php environment variable && install swoole composer
 RUN cd ${TMP_PATH}/php-${PHP_VERSION} && \
   cp -f php.ini-development ${PHP_PATH}/etc/php.ini && \
   cp ${PHP_PATH}/etc/php-fpm.d/www.conf.default ${PHP_PATH}/etc/php-fpm.d/www.conf && \
   cp ${PHP_PATH}/etc/php-fpm.conf.default ${PHP_PATH}/etc/php-fpm.conf
-
-# add php environment variable && install swoole composer
-RUN echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
+  echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
   echo 'PATH=$PATH:/www/server/php/sbin' >> /etc/profile && \
   echo 'export PATH' >> /etc/profile && \
   source /etc/profile
 
-#install swoole extension
+#install swoole-extension redis-extension
 RUN cd ${TMP_PATH} && \
   curl -O https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -L && \
   tar -zxvf v${SWOOLE_VERSION}.tar.gz && \
@@ -123,10 +130,8 @@ RUN cd ${TMP_PATH} && \
   --enable-openssl \
   --enable-http2  \
   --enable-mysqlnd && \
-  make clean && make && make install && enable-php-extension swoole
-
-# install redis  extension
-RUN /www/server/php/bin/pecl install -o -f redis && enable-php-extension redis
+  make clean && make && make install && enable-php-extension swoole && \
+  /www/server/php/bin/pecl install -o -f redis && enable-php-extension redis
 
 # install composer
 RUN cd ${TMP_PATH} && \
