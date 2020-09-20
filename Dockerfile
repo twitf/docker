@@ -105,6 +105,7 @@ RUN cd ${TMP_PATH} && \
   --with-openssl \
   --with-curl=/usr/bin/curl \
   --with-mhash && \
+  --with-pear && \
   make && make install
 
 # add php config file
