@@ -44,8 +44,7 @@ RUN cd ${TMP_PATH} && \
   tar -Jxvf re2c-${RE2C_VERSION}.tar.xz && \
   cd re2c-${RE2C_VERSION} && \
   ./configure && \
-  make && \
-  make install && \
+  make && make install && \
   curl -O https://github.com/nih-at/libzip/releases/download/v${LIBZIP_VERSION}/libzip-${LIBZIP_VERSION}.tar.xz -L && \
   tar -Jxvf tar -Jxvf libzip-${LIBZIP_VERSION}.tar.xz && \
   cd libzip-${LIBZIP_VERSION} && \
@@ -110,7 +109,7 @@ RUN cd ${TMP_PATH} && \
 RUN cd ${TMP_PATH}/php-${PHP_VERSION} && \
   cp -f php.ini-development ${PHP_PATH}/etc/php.ini && \
   cp ${PHP_PATH}/etc/php-fpm.d/www.conf.default ${PHP_PATH}/etc/php-fpm.d/www.conf && \
-  cp ${PHP_PATH}/etc/php-fpm.conf.default ${PHP_PATH}/etc/php-fpm.conf
+  cp ${PHP_PATH}/etc/php-fpm.conf.default ${PHP_PATH}/etc/php-fpm.conf && \
   echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
   echo 'PATH=$PATH:/www/server/php/sbin' >> /etc/profile && \
   echo 'export PATH' >> /etc/profile && \
