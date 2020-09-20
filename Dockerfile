@@ -49,7 +49,7 @@ RUN cd ${TMP_PATH} && \
   ./configure && \
   make && make install && \
   curl -O https://github.com/nih-at/libzip/releases/download/v${LIBZIP_VERSION}/libzip-${LIBZIP_VERSION}.tar.xz -L && \
-  tar -Jxvf tar -Jxvf libzip-${LIBZIP_VERSION}.tar.xz && \
+  tar -Jxvf libzip-${LIBZIP_VERSION}.tar.xz && \
   cd libzip-${LIBZIP_VERSION} && \
   mkdir build && \
   cd build && \
