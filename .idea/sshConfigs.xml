@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" host="45.77.221.90" id="8d8e2884-2101-4a69-90e6-6a510bbb5d9b" port="22" customName="twitf" nameFormat="CUSTOM" />
+      <sshConfig authType="PASSWORD" host="45.77.221.90" id="c33441fc-48cc-4fc4-b24f-ed0a973e0cdc" port="22" customName="twitf" nameFormat="CUSTOM" />
+    </configs>
+  </component>
+</project>
