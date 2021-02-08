@@ -1,14 +1,25 @@
-FROM centos:latest
+FROM centos:7
 
-ENV PHP_VERSION 7.2.22
+ENV PHP_VERSION 7.4.10
 
-ENV SWOOLE_VERSION 4.4.5
+ENV SWOOLE_VERSION 4.5.4
 
 ENV PHP_PATH /www/server/php
 ENV SUPERVISOR_PATH /www/server/supervisor
 ENV TMP_PATH /www/tmp
 
-RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/{php,supervisor/conf}}
+# add extension open
+COPY ./enable-php-extension /usr/local/bin/
+RUN chmod +x /usr/local/bin/enable-php-extension
+
+# add user
+RUN groupadd -g 1000 twitf && \
+  useradd -u 1000 -g twitf -m twitf -s /bin/bash && \
+  echo 'twitf:twitf' | chpasswd && \
+  echo 'root:root' | chpasswd && \
+  ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+RUN mkdir -pv /www/{{tmp,server,wwwroot,wwwlogs},server/{php,supervisor/conf}} &&  chown -R twitf:twitf /www
 
 RUN rpm --import /etc/pki/rpm-gpg/RPM*
 
@@ -19,29 +30,31 @@ RUN yum -y clean all && yum -y update && yum -y groupinstall 'Development Tools'
 RUN yum -y install openssh-clients openssh-server && \
   ssh-keygen -q -t rsa -b 2048 -f /etc/ssh/ssh_host_rsa_key -N '' && \
   ssh-keygen -q -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' && \
-  ssh-keygen -t dsa -f /etc/ssh/ssh_host_ed25519_key -N ''
-
-# add user
-RUN groupadd -g 1000 twitf && \
-  useradd -u 1000 -g twitf -m twitf -s /bin/bash && \
-  echo 'twitf:twitf' | chpasswd && \
-  echo 'root:root' | chpasswd
+  ssh-keygen -t dsa -f /etc/ssh/ssh_host_ed25519_key -N '' && \
+  sed -i -r 's/^(.*pam_nologin.so)/#\1/' /etc/pam.d/sshd
 
 # install dependency
 RUN yum -y install libxml2 libxml2-devel curl-devel libjpeg-devel libpng-devel freetype-devel libicu-devel libxslt-devel \
   openssl-devel glibc-headers gcc-c++ bzip2 bzip2-devel openldap openldap-devel unixODBC unixODBC-devel net-snmp net-snmp-devel \
-  expat expat-devel bison git
+  expat expat-devel bison git libsqlite3x-devel oniguruma-devel cmake3
 
-# install re2c
+# install re2c libzip
 ENV RE2C_VERSION 1.2.1
+ENV LIBZIP_VERSION 1.7.3
 RUN cd ${TMP_PATH} && \
   curl -O https://github.com/skvadrik/re2c/releases/download/${RE2C_VERSION}/re2c-${RE2C_VERSION}.tar.xz -L && \
   # tar -zxvf re2c-${RE2C_VERSION}.tar.gz && \
   tar -Jxvf re2c-${RE2C_VERSION}.tar.xz && \
   cd re2c-${RE2C_VERSION} && \
   ./configure && \
-  make && \
-  make install
+  make && make install && \
+  curl -O https://github.com/nih-at/libzip/releases/download/v${LIBZIP_VERSION}/libzip-${LIBZIP_VERSION}.tar.xz -L && \
+  tar -Jxvf libzip-${LIBZIP_VERSION}.tar.xz && \
+  cd libzip-${LIBZIP_VERSION} && \
+  mkdir build && \
+  cd build && \
+  cmake3 .. && \
+  make && make install
 
 # install php
 RUN cd ${TMP_PATH} && \
@@ -73,6 +86,7 @@ RUN cd ${TMP_PATH} && \
   --enable-wddx \
   --enable-opcache \
   --with-gettext \
+  --enable-gd \
   --with-xsl \
   --with-libexpat-dir \
   --with-xmlrpc \
@@ -82,7 +96,6 @@ RUN cd ${TMP_PATH} && \
   --with-mysqli=mysqlnd \
   --with-pdo-mysql=mysqlnd \
   --with-pdo-odbc=unixODBC,/usr \
-  --with-gd \
   --with-jpeg-dir \
   --with-png-dir \
   --with-zlib-dir \
@@ -92,21 +105,21 @@ RUN cd ${TMP_PATH} && \
   --with-openssl \
   --with-curl=/usr/bin/curl \
   --with-mhash && \
+  --with-pear && \
   make && make install
 
 # add php config file
+# add php environment variable && install swoole composer
 RUN cd ${TMP_PATH}/php-${PHP_VERSION} && \
   cp -f php.ini-development ${PHP_PATH}/etc/php.ini && \
   cp ${PHP_PATH}/etc/php-fpm.d/www.conf.default ${PHP_PATH}/etc/php-fpm.d/www.conf && \
-  cp ${PHP_PATH}/etc/php-fpm.conf.default ${PHP_PATH}/etc/php-fpm.conf
-
-# add php environment variable && install swoole composer
-RUN echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
+  cp ${PHP_PATH}/etc/php-fpm.conf.default ${PHP_PATH}/etc/php-fpm.conf && \
+  echo 'PATH=$PATH:/www/server/php/bin' >> /etc/profile && \
   echo 'PATH=$PATH:/www/server/php/sbin' >> /etc/profile && \
   echo 'export PATH' >> /etc/profile && \
   source /etc/profile
 
-#install swoole
+#install swoole-extension redis-extension
 RUN cd ${TMP_PATH} && \
   curl -O https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -L && \
   tar -zxvf v${SWOOLE_VERSION}.tar.gz && \
@@ -117,7 +130,8 @@ RUN cd ${TMP_PATH} && \
   --enable-openssl \
   --enable-http2  \
   --enable-mysqlnd && \
-  make clean && make && make install
+  make clean && make && make install && enable-php-extension swoole && \
+  /www/server/php/bin/pecl install -o -f redis && enable-php-extension redis
 
 # install composer
 RUN cd ${TMP_PATH} && \
@@ -125,9 +139,9 @@ RUN cd ${TMP_PATH} && \
   && mv composer.phar /usr/local/bin/composer \
   && chmod +x /usr/local/bin/composer
 
-# RUN nohup supervisord -c ${SUPERVISOR_PATH}/supervisord.conf
+# install supervisord
 RUN yum install -y supervisor && \
-  sed -i 's!files = supervisord.d/*.ini!files = /www/server/supervisor/conf/*.ini!g' /etc/supervisord.conf && \
+  sed -i 's!files = supervisord.d/*.!files = /www/server/supervisor/conf/*!g' /etc/supervisord.conf && \
   sed -i 's!logfile=/var/log/supervisor/supervisord.log!logfile=/www/server/supervisor/supervisord.log!g' /etc/supervisord.conf
 
 # 清理缓存
@@ -135,4 +149,4 @@ RUN yum -y clean all && rm -rf ${TMP_PATH}/*
 
 EXPOSE 22
 
-ENTRYPOINT ["/bin/bash","-c","/usr/sbin/sshd -D | supervisord -c /etc/supervisord.conf"]
+ENTRYPOINT ["/bin/bash","-c","/usr/sbin/sshd -D"]

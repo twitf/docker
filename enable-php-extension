@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+addPHPExtensions(){
+  extensionName=${1}
+  if ! grep -Fxq "extension=$extensionName" '/www/server/php/etc/php.ini'
+  then
+    line=$(cat '/www/server/php/etc/php.ini' | grep -n '; Module Settings ;' | grep -o '^[0-9]*')
+    line=$((line - 2))
+    sed -i ${line}"i\extension=$extensionName" "/www/server/php/etc/php.ini";
+    echo "Extension $extensionName has been added successfully"
+  else 
+    echo "Extension $extensionName has been added, please do not add it repeatedly "
+  fi
+}
+addPHPExtensions $1
