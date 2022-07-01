@@ -15,6 +15,17 @@ ARG PGID=1000
 COPY id_rsa /tmp/id_rsa
 COPY id_rsa.pub /tmp/id_rsa.pub
 
+# debian 11.x (bullseye) 阿里云镜像源
+RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
+    echo "deb http://mirrors.aliyun.com/debian/ bullseye main non-free contrib" >>/etc/apt/sources.list && \
+    echo "deb-src http://mirrors.aliyun.com/debian/ bullseye main non-free contrib" >>/etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian-security/ bullseye-security main" >>/etc/apt/sources.list && \
+    echo "deb-src http://mirrors.aliyun.com/debian-security/ bullseye-security main" >>/etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian/ bullseye-updates main non-free contrib" >>/etc/apt/sources.list && \
+    echo "deb-src http://mirrors.aliyun.com/debian/ bullseye-updates main non-free contrib" >>/etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian/ bullseye-backports main non-free contrib" >>/etc/apt/sources.list && \
+    echo "deb-src http://mirrors.aliyun.com/debian/ bullseye-backports main non-free contrib" >>/etc/apt/sources.list
+
 # 设置用户密码 添加用户twitf 安装ssh 设置密码和秘钥登录皆可
 RUN apt-get update -yqq && \
   pecl channel-update pecl.php.net && \
@@ -36,17 +47,6 @@ RUN apt-get update -yqq && \
   sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
   sed -i 's/#AuthorizedKeysFile/AuthorizedKeysFile/' /etc/ssh/sshd_config
 
-# debian 9.x (stretch) 阿里云镜像源
-RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
-  echo "deb http://mirrors.aliyun.com/debian/ stretch main non-free contrib" >/etc/apt/sources.list && \
-  echo "deb-src http://mirrors.aliyun.com/debian/ stretch main non-free contrib" >>/etc/apt/sources.list && \
-  echo "deb http://mirrors.aliyun.com/debian-security stretch/updates main" >>/etc/apt/sources.list && \
-  echo "deb-src http://mirrors.aliyun.com/debian-security stretch/updates main" >>/etc/apt/sources.list && \
-  echo "deb http://mirrors.aliyun.com/debian/ stretch-updates main non-free contrib" >>/etc/apt/sources.list && \
-  echo "deb-src http://mirrors.aliyun.com/debian/ stretch-updates main non-free contrib" >>/etc/apt/sources.list && \
-  echo "deb http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" >>/etc/apt/sources.list && \
-  echo "deb-src http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" >>/etc/apt/sources.list
-
 RUN echo "export TZ='Asia/Shanghai'"  >> /etc/profile
 
 RUN apt-get update -yqq && \
@@ -60,6 +60,7 @@ RUN apt-get update -yqq && \
   libfreetype6-dev \
   libssl-dev \
   libmcrypt-dev \
+  libcurl4-openssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pecl install -o -f redis \
@@ -79,91 +80,33 @@ RUN docker-php-ext-install mysqli
 
 RUN docker-php-ext-install pdo_mysql
 
-RUN docker-php-ext-install mcrypt
-
 RUN docker-php-ext-configure gd \
-  --enable-gd-native-ttf \
-  --with-jpeg-dir=/usr/lib \
-  --with-freetype-dir=/usr/include/freetype2 && \
+  --with-jpeg=/usr/lib \
+  --with-freetype=/usr/include/freetype2 && \
   docker-php-ext-install gd
 
-# nghttp2 prepare
-RUN apt-get update -yqq && \
-  apt-get install -y --no-install-recommends \
-  g++ make binutils autoconf automake autotools-dev libtool pkg-config \
-  zlib1g-dev libcunit1-dev libxml2-dev libevent-dev libjansson-dev \
-  libc-ares-dev libjemalloc-dev libsystemd-dev \
-  cython python3-dev python-setuptools
+RUN curl -o swoole.tar.gz https://github.com/swoole/swoole-src/archive/refs/tags/v${PHP_SWOOLE_VERSION}.tar.gz -L && \
+    tar zxvf swoole.tar.gz && \
+    cd swoole-src-${PHP_SWOOLE_VERSION} && \
+    phpize && \
+    ./configure \
+    --enable-http2 \
+    --enable-mysqlnd \
+    --enable-openssl \
+    --enable-sockets --enable-swoole-curl --enable-swoole-json && \
+    make && make install && \
+    docker-php-ext-enable swoole && \
+    rm -rf swoole.tar.gz swoole-src-${PHP_SWOOLE_VERSION}
 
-ARG NGHTTP2_VERSION=1.35.1
+RUN docker-php-ext-install pcntl
 
-# nghttp2
-RUN curl -O https://github.com/nghttp2/nghttp2/archive/v${NGHTTP2_VERSION}.tar.gz -L && \
-  tar zxvf v${NGHTTP2_VERSION}.tar.gz && \
-  cd nghttp2-${NGHTTP2_VERSION} && \
-  autoreconf -i && \
-  automake && \
-  autoconf && \
-  ./configure && \
-  make && make install && ldconfig
+RUN curl -sS https://getcomposer.org/installer | php && \
+    mv composer.phar /usr/local/bin/composer && \
+    composer self-update --clean-backups
 
-ARG HIREDIS_VERSION=0.14.0
-
-# install hiredis
-# PS: Swoole 4.2.6版本及以后不再需要手动安装和启用, 而是swoole自带
-RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" || $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-  curl -O https://github.com/redis/hiredis/archive/v${HIREDIS_VERSION}.tar.gz -L && \
-  tar zxvf v${HIREDIS_VERSION}.tar.gz && \
-  cd hiredis-${HIREDIS_VERSION} && \
-  make -j && \
-  make install && \
-  ldconfig \
-  ;fi
-
-## install swoole
-## 2.0.11 是最后一个支持php5的版本
-## 2.2.0 php7.0
-## 4.0.1或更高版本后不再需要设置 --enable-coroutine \
-## 4.2.6版本及以后不再需要手动安装hredis和启用--enable-async-redis \, 而是swoole自带 php5和7.0 都使用
-RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-  curl -O https://github.com/swoole/swoole-src/archive/v2.0.11.tar.gz -L && \
-  tar zxvf v2.0.11.tar.gz && \
-  cd swoole-src-2.0.11 && \
-  phpize && \
-  ./configure \
-  --enable-coroutine \
-  --enable-openssl  \
-  --enable-http2  \
-  --enable-async-redis \
-  --enable-mysqlnd && \
-  make clean && make && make install \
-  ;else \
-  if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-  curl -O https://github.com/swoole/swoole-src/archive/v2.2.0.tar.gz -L && \
-  tar zxvf v2.2.0.tar.gz && \
-  cd swoole-src-2.2.0 && \
-  phpize && \
-  ./configure \
-  --enable-coroutine \
-  --enable-openssl  \
-  --enable-http2  \
-  --enable-async-redis \
-  --enable-mysqlnd && \
-  make clean && make && make install \
-  ;else \
-  curl -O https://github.com/swoole/swoole-src/archive/v4.2.12.tar.gz -L && \
-  tar zxvf v4.2.12.tar.gz && \
-  cd swoole-src-4.2.12 && \
-  phpize && \
-  ./configure \
-  --enable-openssl  \
-  --enable-http2  \
-  --enable-sockets \
-  --enable-mysqlnd && \
-  make clean && make && make install \
-  ;fi \
-  ;fi  && \
-  docker-php-ext-enable swoole
+RUN pecl install -o -f xlswriter \
+  &&  rm -rf /tmp/pear \
+  &&  docker-php-ext-enable xlswriter
 
 # 清理
 RUN apt-get clean && \
