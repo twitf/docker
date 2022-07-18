@@ -1,0 +1,19 @@
+version: "3"
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+services:
+  php:
+    image: php:7.4-fpm
+    ports:
+      - "81:80"
+    volumes:
+      - /home/administrator/Documents/wwwroot/:/var/www/html
+  mariadb:
+    image: mariadb
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root

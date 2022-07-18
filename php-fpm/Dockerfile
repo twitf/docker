@@ -2,6 +2,8 @@ ARG PHP_VERSION
 
 FROM php:${PHP_VERSION}-fpm
 
+ARG PHP_SWOOLE_VERSION
+
 MAINTAINER "twitf <qiangzaiying123@gmail.com>"
 
 USER root
@@ -15,16 +17,16 @@ ARG PGID=1000
 COPY id_rsa /tmp/id_rsa
 COPY id_rsa.pub /tmp/id_rsa.pub
 
-# debian 11.x (bullseye) 阿里云镜像源
-RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
-    echo "deb http://mirrors.aliyun.com/debian/ bullseye main non-free contrib" >>/etc/apt/sources.list && \
-    echo "deb-src http://mirrors.aliyun.com/debian/ bullseye main non-free contrib" >>/etc/apt/sources.list && \
-    echo "deb http://mirrors.aliyun.com/debian-security/ bullseye-security main" >>/etc/apt/sources.list && \
-    echo "deb-src http://mirrors.aliyun.com/debian-security/ bullseye-security main" >>/etc/apt/sources.list && \
-    echo "deb http://mirrors.aliyun.com/debian/ bullseye-updates main non-free contrib" >>/etc/apt/sources.list && \
-    echo "deb-src http://mirrors.aliyun.com/debian/ bullseye-updates main non-free contrib" >>/etc/apt/sources.list && \
-    echo "deb http://mirrors.aliyun.com/debian/ bullseye-backports main non-free contrib" >>/etc/apt/sources.list && \
-    echo "deb-src http://mirrors.aliyun.com/debian/ bullseye-backports main non-free contrib" >>/etc/apt/sources.list
+## debian 11.x (bullseye) 阿里云镜像源
+#RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
+#    echo "deb http://mirrors.aliyun.com/debian/ bullseye main non-free contrib" >>/etc/apt/sources.list && \
+#    echo "deb-src http://mirrors.aliyun.com/debian/ bullseye main non-free contrib" >>/etc/apt/sources.list && \
+#    echo "deb http://mirrors.aliyun.com/debian-security/ bullseye-security main" >>/etc/apt/sources.list && \
+#    echo "deb-src http://mirrors.aliyun.com/debian-security/ bullseye-security main" >>/etc/apt/sources.list && \
+#    echo "deb http://mirrors.aliyun.com/debian/ bullseye-updates main non-free contrib" >>/etc/apt/sources.list && \
+#    echo "deb-src http://mirrors.aliyun.com/debian/ bullseye-updates main non-free contrib" >>/etc/apt/sources.list && \
+#    echo "deb http://mirrors.aliyun.com/debian/ bullseye-backports main non-free contrib" >>/etc/apt/sources.list && \
+#    echo "deb-src http://mirrors.aliyun.com/debian/ bullseye-backports main non-free contrib" >>/etc/apt/sources.list
 
 # 设置用户密码 添加用户twitf 安装ssh 设置密码和秘钥登录皆可
 RUN apt-get update -yqq && \
@@ -85,9 +87,9 @@ RUN docker-php-ext-configure gd \
   --with-freetype=/usr/include/freetype2 && \
   docker-php-ext-install gd
 
-RUN curl -o swoole.tar.gz https://github.com/swoole/swoole-src/archive/refs/tags/v${PHP_SWOOLE_VERSION}.tar.gz -L && \
+RUN curl -o swoole.tar.gz https://github.com/swoole/swoole-src/archive/refs/tags/v$PHP_SWOOLE_VERSION.tar.gz -L && \
     tar zxvf swoole.tar.gz && \
-    cd swoole-src-${PHP_SWOOLE_VERSION} && \
+    cd swoole-src-$PHP_SWOOLE_VERSION && \
     phpize && \
     ./configure \
     --enable-http2 \
@@ -96,13 +98,17 @@ RUN curl -o swoole.tar.gz https://github.com/swoole/swoole-src/archive/refs/tags
     --enable-sockets --enable-swoole-curl --enable-swoole-json && \
     make && make install && \
     docker-php-ext-enable swoole && \
-    rm -rf swoole.tar.gz swoole-src-${PHP_SWOOLE_VERSION}
+    rm -rf swoole.tar.gz swoole-src-$PHP_SWOOLE_VERSION
 
 RUN docker-php-ext-install pcntl
 
 RUN curl -sS https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer && \
     composer self-update --clean-backups
+
+RUN pecl install -o -f xlswriter \
+  &&  rm -rf /tmp/pear \
+  &&  docker-php-ext-enable xlswriter
 
 RUN pecl install -o -f xlswriter \
   &&  rm -rf /tmp/pear \

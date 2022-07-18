@@ -3,7 +3,7 @@ networks:
   frontend:
     driver: bridge
   backend:
-    driver: bridges
+    driver: bridge
 
 volumes:
   mariadb:
@@ -18,6 +18,7 @@ services:
       context: ./php-fpm
       args:
         - PHP_VERSION=${PHP_VERSION}
+        - PHP_SWOOLE_VERSION=${PHP_SWOOLE_VERSION}
     volumes:
       - ./php-fpm/php${PHP_VERSION}.ini:/usr/local/etc/php/php.ini
       - ${WWW_ROOT_PATH}/:/var/www
